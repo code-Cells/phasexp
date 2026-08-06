@@ -132,9 +132,7 @@ class Molecule():
                         continue
                     seq = sorted([a1, a3])
                     seq.insert(1, a2)
-                    print(seq)
                     seq = tuple(seq)
-                    print(seq)
                     if a1 != a3 and seq not in blacklist:
                         seqs.append(seq)
                         blacklist.add(seq)
@@ -152,7 +150,9 @@ class Molecule():
                     for a4 in self.graph.neighbors(a3):
                         if a2 == a4:
                             continue
-                        seq = (a1, a2, a3, a4) if a1 <= a4 else (a4, a3, a2, a1)
+                        type_a1 = self.atom_types[a1]
+                        type_a4 = self.atom_types[a4]
+                        seq = (a1, a2, a3, a4) if type_a1 <= type_a4 else (a4, a3, a2, a1)
                         if a1 != a4 and seq not in blacklist:
                             seqs.append(seq)
                             blacklist.add(seq)
@@ -226,10 +226,6 @@ class Molecule():
         return e
 
     def dihedrals_energy(self):
-        for k in self.ff.dihedrals.keys():
-            if set(k) == {'HA3', 'CT3', 'CT1', 'NH3'}:
-                print(k)
-        print(self.ff.dihedrals)
         e = 0
         for d in self.dihedrals:
             u, v, w, x = d
@@ -237,7 +233,6 @@ class Molecule():
             type_v = self.atom_types[v]
             type_w = self.atom_types[w]
             type_x = self.atom_types[x]
-            print(type_u, type_v, type_w, type_x)
             par = self.ff.dihedrals[_sort_tuple(type_u, type_v, type_w, type_x)]
             phi0 = par.phi
             kphi = par.kphi
@@ -247,7 +242,7 @@ class Molecule():
             p2 = self.coords[w]
             p3 = self.coords[x]
             phi = dihedral(p0, p1, p2, p3)
-            e += kphi * (1 + np.cons(n * phi - phi0))
+            e += kphi * (1 + np.cos(n * phi - phi0))
         return e
 
     def impropers_energy(self):
@@ -273,12 +268,15 @@ def angle(p0: np.ndarray, p1: np.ndarray, p2: np.ndarray) -> float:
     return np.dot(p1 - p0, p2 - p0)
 
 def dihedral(p0: np.ndarray, p1: np.ndarray, p2: np.ndarray, p3: np.ndarray) -> float:
-    b0 = p0 - p1
+    b0 = p1 - p0
     b1 = p2 - p1
     b2 = p3 - p2
-    b1 = b1 / np.linalg.norm(b1, axis=1)[:, None]
-    v = b0 - np.sum(b0 * b1, axis=1)[:, None] * b1
-    w = b2 - np.sum(b2 * b1, axis=1)[:, None] * b1
-    x = np.sum(v * w, axis=1)
-    y = np.sum(np.cross(b1, v) * w, axis=1)
-    return np.degrees(np.arctan2(y, x))
+    v1 = np.cross(b0, b1)
+    v1 = v1 / (v1 * v1).sum(axis=-1)**0.5
+    v2 = np.cross(b1, b2)
+    v2 = v2 / (v2 * v2).sum(axis=-1)**0.5
+    sig = np.sign((v1 * b2).sum(axis=-1))
+    rad = np.arccos((v1*v2).sum(axis=-1) / ((v1**2).sum(axis=-1) * (v2**2).sum(axis=-1))**0.5)
+    if sig:
+        rad = rad * sig
+    return rad
