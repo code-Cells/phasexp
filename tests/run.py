@@ -14,7 +14,7 @@ from phasexp.problem import run
 #          H9                       HA3
 
 def test_load_gro():
-    path = "../data/"
+    path = "../aa/"
     mol = Molecule.load_gro(
         path + "alanine.gro",
         path + "alanine.top",
