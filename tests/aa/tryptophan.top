@@ -1,0 +1,306 @@
+;
+;	File 'tryptophan.top' was generated
+;	By user: go (1000)
+;	On host: pizarro
+;	At date: Tue Nov 25 06:33:40 2025
+;
+;	This is a standalone topology file
+;
+;	Created by:
+;	                    :-) GROMACS - gmx pdb2gmx, 2024.3 (-:
+;	
+;	Executable:   /usr/local/gromacs/bin/gmx_mpi
+;	Data prefix:  /usr/local/gromacs
+;	Working dir:  /home/go/Downloads/2d_res_vis/aa
+;	Command line:
+;	  gmx_mpi pdb2gmx -f tryptophan.pdb -o tryptophan.gro -p tryptophan.top -ignh
+;	Force field was read from the standard GROMACS share directory.
+;
+
+; Include forcefield parameters
+#include "charmm36-jul2022.ff/forcefield.itp"
+
+[ moleculetype ]
+; Name            nrexcl
+Protein_chain_A     3
+
+[ atoms ]
+;   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB
+; residue   1 TRP rtp TRP  q  0.0
+     1        NH3      1    TRP      N      1       -0.3     14.007
+     2         HC      1    TRP     H1      2       0.33      1.008
+     3         HC      1    TRP     H2      3       0.33      1.008
+     4         HC      1    TRP     H3      4       0.33      1.008
+     5        CT1      1    TRP     CA      5       0.21     12.011
+     6        HB1      1    TRP     HA      5        0.1      1.008
+     7        CT2      1    TRP     CB      6      -0.18     12.011
+     8        HA2      1    TRP    HB1      6       0.09      1.008
+     9        HA2      1    TRP    HB2      6       0.09      1.008
+    10         CY      1    TRP     CG      7      -0.03     12.011
+    11         CA      1    TRP    CD1      7      -0.15     12.011
+    12         HP      1    TRP    HD1      7       0.22      1.008
+    13         NY      1    TRP    NE1      7      -0.51     14.007
+    14          H      1    TRP    HE1      7       0.37      1.008
+    15        CPT      1    TRP    CE2      7       0.24     12.011
+    16        CPT      1    TRP    CD2      7       0.11     12.011
+    17        CAI      1    TRP    CE3      7      -0.25     12.011
+    18         HP      1    TRP    HE3      7       0.17      1.008
+    19         CA      1    TRP    CZ3      7       -0.2     12.011
+    20         HP      1    TRP    HZ3      7       0.14      1.008
+    21        CAI      1    TRP    CZ2      7      -0.27     12.011
+    22         HP      1    TRP    HZ2      7       0.16      1.008
+    23         CA      1    TRP    CH2      7      -0.14     12.011
+    24         HP      1    TRP    HH2      7       0.14      1.008
+    25         CC      1    TRP      C      8       0.34     12.011
+    26         OC      1    TRP    OT1      9      -0.67    15.9994
+    27         OC      1    TRP    OT2     10      -0.67    15.9994   ; qtot 0
+
+[ bonds ]
+;  ai    aj funct            c0            c1            c2            c3
+    1     2     1 
+    1     3     1 
+    1     4     1 
+    1     5     1 
+    5     6     1 
+    5     7     1 
+    5    25     1 
+    7     8     1 
+    7     9     1 
+    7    10     1 
+   10    11     1 
+   10    16     1 
+   11    12     1 
+   11    13     1 
+   13    14     1 
+   13    15     1 
+   15    16     1 
+   15    21     1 
+   16    17     1 
+   17    18     1 
+   17    19     1 
+   19    20     1 
+   19    23     1 
+   21    22     1 
+   21    23     1 
+   23    24     1 
+   25    26     1 
+   25    27     1 
+
+[ pairs ]
+;  ai    aj funct            c0            c1            c2            c3
+    1     8     1 
+    1     9     1 
+    1    10     1 
+    1    26     1 
+    1    27     1 
+    2     6     1 
+    2     7     1 
+    2    25     1 
+    3     6     1 
+    3     7     1 
+    3    25     1 
+    4     6     1 
+    4     7     1 
+    4    25     1 
+    5    11     1 
+    5    16     1 
+    6     8     1 
+    6     9     1 
+    6    10     1 
+    6    26     1 
+    6    27     1 
+    7    12     1 
+    7    13     1 
+    7    15     1 
+    7    17     1 
+    7    26     1 
+    7    27     1 
+    8    11     1 
+    8    16     1 
+    8    25     1 
+    9    11     1 
+    9    16     1 
+    9    25     1 
+   10    14     1 
+   10    18     1 
+   10    19     1 
+   10    21     1 
+   10    25     1 
+   11    17     1 
+   11    21     1 
+   12    14     1 
+   12    15     1 
+   12    16     1 
+   13    17     1 
+   13    22     1 
+   13    23     1 
+   14    16     1 
+   14    21     1 
+   15    18     1 
+   15    19     1 
+   15    24     1 
+   16    20     1 
+   16    22     1 
+   16    23     1 
+   17    21     1 
+   17    24     1 
+   18    20     1 
+   18    23     1 
+   19    22     1 
+   20    21     1 
+   20    24     1 
+   22    24     1 
+
+[ angles ]
+;  ai    aj    ak funct            c0            c1            c2            c3
+    2     1     3     5 
+    2     1     4     5 
+    2     1     5     5 
+    3     1     4     5 
+    3     1     5     5 
+    4     1     5     5 
+    1     5     6     5 
+    1     5     7     5 
+    1     5    25     5 
+    6     5     7     5 
+    6     5    25     5 
+    7     5    25     5 
+    5     7     8     5 
+    5     7     9     5 
+    5     7    10     5 
+    8     7     9     5 
+    8     7    10     5 
+    9     7    10     5 
+    7    10    11     5 
+    7    10    16     5 
+   11    10    16     5 
+   10    11    12     5 
+   10    11    13     5 
+   12    11    13     5 
+   11    13    14     5 
+   11    13    15     5 
+   14    13    15     5 
+   13    15    16     5 
+   13    15    21     5 
+   16    15    21     5 
+   10    16    15     5 
+   10    16    17     5 
+   15    16    17     5 
+   16    17    18     5 
+   16    17    19     5 
+   18    17    19     5 
+   17    19    20     5 
+   17    19    23     5 
+   20    19    23     5 
+   15    21    22     5 
+   15    21    23     5 
+   22    21    23     5 
+   19    23    21     5 
+   19    23    24     5 
+   21    23    24     5 
+    5    25    26     5 
+    5    25    27     5 
+   26    25    27     5 
+
+[ dihedrals ]
+;  ai    aj    ak    al funct            c0            c1            c2            c3            c4            c5
+    2     1     5     6     9 
+    2     1     5     7     9 
+    2     1     5    25     9 
+    3     1     5     6     9 
+    3     1     5     7     9 
+    3     1     5    25     9 
+    4     1     5     6     9 
+    4     1     5     7     9 
+    4     1     5    25     9 
+    1     5     7     8     9 
+    1     5     7     9     9 
+    1     5     7    10     9 
+    6     5     7     8     9 
+    6     5     7     9     9 
+    6     5     7    10     9 
+   25     5     7     8     9 
+   25     5     7     9     9 
+   25     5     7    10     9 
+    1     5    25    26     9 
+    1     5    25    27     9 
+    6     5    25    26     9 
+    6     5    25    27     9 
+    7     5    25    26     9 
+    7     5    25    27     9 
+    5     7    10    11     9 
+    5     7    10    16     9 
+    8     7    10    11     9 
+    8     7    10    16     9 
+    9     7    10    11     9 
+    9     7    10    16     9 
+    7    10    11    12     9 
+    7    10    11    13     9 
+   16    10    11    12     9 
+   16    10    11    13     9 
+    7    10    16    15     9 
+    7    10    16    17     9 
+   11    10    16    15     9 
+   11    10    16    17     9 
+   10    11    13    14     9 
+   10    11    13    15     9 
+   12    11    13    14     9 
+   12    11    13    15     9 
+   11    13    15    16     9 
+   11    13    15    21     9 
+   14    13    15    16     9 
+   14    13    15    21     9 
+   13    15    16    10     9 
+   13    15    16    17     9 
+   21    15    16    10     9 
+   21    15    16    17     9 
+   13    15    21    22     9 
+   13    15    21    23     9 
+   16    15    21    22     9 
+   16    15    21    23     9 
+   10    16    17    18     9 
+   10    16    17    19     9 
+   15    16    17    18     9 
+   15    16    17    19     9 
+   16    17    19    20     9 
+   16    17    19    23     9 
+   18    17    19    20     9 
+   18    17    19    23     9 
+   17    19    23    21     9 
+   17    19    23    24     9 
+   20    19    23    21     9 
+   20    19    23    24     9 
+   15    21    23    19     9 
+   15    21    23    24     9 
+   22    21    23    19     9 
+   22    21    23    24     9 
+
+[ dihedrals ]
+;  ai    aj    ak    al funct            c0            c1            c2            c3
+   25     5    27    26     2 
+
+; Include Position restraint file
+#ifdef POSRES
+#include "posre.itp"
+#endif
+
+; Include water topology
+#include "charmm36-jul2022.ff/tip3p.itp"
+
+#ifdef POSRES_WATER
+; Position restraint for each water oxygen
+[ position_restraints ]
+;  i funct       fcx        fcy        fcz
+   1    1       1000       1000       1000
+#endif
+
+; Include topology for ions
+#include "charmm36-jul2022.ff/ions.itp"
+
+[ system ]
+; Name
+6305 
+
+[ molecules ]
+; Compound        #mols
+Protein_chain_A     1
