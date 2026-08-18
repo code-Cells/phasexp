@@ -156,6 +156,18 @@ class ForceField():
         self.graph = nx.compose(self.graph, other.graph)
         return self
 
+    def atom(self, a: str):
+        return self.atom_types[a]
+
+    def bond(self, a: str, b: str):
+            return self.atom_types[(a, b)]
+
+    def angle(self, a: str, b: str, c: str):
+            return self.atom_types[(a, b, c)]
+
+    def dihedral(self, a: str, b: str, c: str, d: str):
+            return self.atom_types[(a, b, c, d)]
+    
 
 class AtomParemeter():
     def __init__(self, 

@@ -1,14 +1,15 @@
 from __future__ import annotations
 from .ff import ForceField, _sort_tuple
 from copy import deepcopy
+from scipy.spatial.transform import Rotation
 from sys import maxsize
-from typing import List, Tuple
+from typing import Iterable, List, Tuple
 from itertools import combinations
 import networkx as nx
 import numpy as np
 import periodictable as pt
 import re
- 
+
 
 class Molecule():
     def __init__(self):
@@ -37,6 +38,7 @@ class Molecule():
             mol.ff = ForceField.from_itp(ff)
         else:
             mol.ff = ForceField()
+        print(f"{mol.atoms=}")
         return mol
 
     @staticmethod
@@ -162,8 +164,19 @@ class Molecule():
     def load_itp(self, filepath: str):
         self.ff = ForceField.from_itp(filepath)
     
-    def transform(self, x: np.ndarray) -> Molecule:
-        new_mol = Molecule()
+    def transform(self, r: np.ndarray=None, theta: float=None, axis: int | str=None) -> Molecule:
+        if (axis is None) != (theta is None):
+            raise ValueError("Both axis and theta parameters are necessary to assign rotation") 
+        r = np.zeros(3) if r is None else r
+        if isinstance(axis, int):
+            try:
+                axis = "xyz"[axis]
+            except:
+                raise ValueError("Axis should be 'x', 'y', 'z', 0, 1, or 2")
+        new_mol = deepcopy(self)
+        rot_mat = Rotation.from_euler(axis, theta, degrees=True)
+        new_mol.curr_coords = rot_mat.apply(new_mol.curr_coords)
+        new_mol.curr_coords += r
         return new_mol
     
     def backbone(self) -> nx.Graph:
@@ -256,6 +269,54 @@ class Molecule():
     def elec(self):
         e = 0
         return 0
+
+    def __str__(self) -> str:
+        return NotImplemented
+
+    def __repr__(self) -> str:
+        return NotImplemented
+
+    def __len__(self) -> int:
+        return len(self.atoms)
+
+    def __getitem__(self, key: int) -> int:
+        if isinstance(key, slice):
+            return self.atoms[key]
+        atom = self.atoms[key]
+        return atom
+
+    def __iter__(self) -> Iterable[List[int]]:
+        return iter(self.atoms)
+
+    def __contains__(self, atom: int) -> bool:
+        if atom in self.atoms:
+            return True
+        return False
+
+    def __eq__(self, other: Molecule) -> bool:
+        if not isinstance(other, Molecule):
+            return NotImplemented
+        match = 0
+        match += self.atoms == other.atoms
+        match += self.atom_types == other.atom_types
+        match += self.bonds == other.bonds
+        match += self.elements == other.elements
+        match += self.coords == other.coords
+        match += self.curr_coords == other.curr_coords
+        match += self.resids == other.resids
+        match += self.resid_atoms == other.resid_atoms
+        match += self.resnames == other.resnames
+        match += self.graph == other.graph
+        match += self.ff == other.ff
+        if match == 11:
+            return True
+        return False
+
+    def __hash__(self):
+        return NotImplemented
+
+    def __matmul__():
+        return NotImplemented
 
 
 def distance(p0: np.ndarray, p1: np.ndarray) -> float:
