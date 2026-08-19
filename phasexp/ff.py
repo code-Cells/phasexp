@@ -17,7 +17,13 @@ class ForceField():
         self.bonds = {}
         self.angles = {}
         self.dihedrals = {}
+        self.pairs = {}
         self.graph = nx.Graph()
+        self.nbfunc = 0
+        self.comb_rule = 0
+        self.gen_pairs = 0
+        self.fudge_lj = 0
+        self.fudge_qq = 0
 
     @staticmethod
     def _invalid_line(line: str) -> bool:
@@ -44,9 +50,11 @@ class ForceField():
         sections = []
         for i, line in enumerate(raw):
             if line.startswith("[ "):
-                if line[2:].startswith('atomtypes'):
+                if line[2:].startswith('defaults'):
+                    sections.append(("Df", i))
+                elif line[2:].startswith('atomtypes'):
                     sections.append(("At", i))
-                if line[2:].startswith('bondtypes'):
+                elif line[2:].startswith('bondtypes'):
                     sections.append(("B", i))
                 elif line[2:].startswith('angletypes'):
                     sections.append(("A", i))
@@ -61,7 +69,9 @@ class ForceField():
                 for line in raw[j+1:k-1]:
                     if ForceField._invalid_line(line):
                         continue
-                    if s == "At":
+                    if s == "Df":
+                        ForceField._parse_defaults_line(top, line)
+                    elif s == "At":
                         ForceField._parse_atom_line(top, line)
                     elif s == "B":
                         ForceField._parse_bond_line(top, line)
@@ -69,6 +79,8 @@ class ForceField():
                         ForceField._parse_angle_line(top, line)
                     elif s == "D":
                         ForceField._parse_dihedral_line(top, line)
+                    elif s == "P":
+                        ForceField._parse_pair_line(top, line)
         except:
             traceback.print_exc()
             raise ValueError(f"In file {filepath}, line {line}")
@@ -80,6 +92,15 @@ class ForceField():
                     top.graph.add_node(i)
                     blacklist.add(i)
         return top
+
+    @staticmethod
+    def _parse_defaults_line(top: ForceField, line: str):
+        data = line.split()
+        top.nbfunc = data[0]
+        top.comb_rule = data[1]
+        top.gen_pairs = data[2]
+        top.fudge_lj = data[3]
+        top.fudge_qq = data[4]
 
     @staticmethod
     def _parse_atom_line(top: ForceField, line: str):
@@ -132,6 +153,16 @@ class ForceField():
         dihedral_par = DihedralParemeter(u, v, w, x, func, phi, kphi, mult)
         top.dihedrals[_sort_tuple(u, v, w, x)] = dihedral_par
 
+    @staticmethod
+    def _parse_pair_line(top: ForceField, line: str):
+        u = line[:7].strip()
+        v = line[7:14].strip()
+        func = int(line[14:20])
+        vii = float(line[20:36])
+        wii = float(line[36:52].strip())
+        pair_par = PairParemeter(u, v, func, vii, wii)
+        top.pairs[_sort_tuple(u, v)] = pair_par
+
     def __str__(self) -> str:
         out = f"{[i for i in self.graph.nodes()]}\n"
         out += f"{[str(i) for i in self.bonds]}\n"
@@ -156,18 +187,6 @@ class ForceField():
         self.graph = nx.compose(self.graph, other.graph)
         return self
 
-    def atom(self, a: str):
-        return self.atom_types[a]
-
-    def bond(self, a: str, b: str):
-            return self.atom_types[(a, b)]
-
-    def angle(self, a: str, b: str, c: str):
-            return self.atom_types[(a, b, c)]
-
-    def dihedral(self, a: str, b: str, c: str, d: str):
-            return self.atom_types[(a, b, c, d)]
-    
 
 class AtomParemeter():
     def __init__(self, 
@@ -249,6 +268,24 @@ class DihedralParemeter():
 
     def __str__(self) -> str:
         return f"{self.u}, {self.v}, {self.w}, {self.x}, {self.func}, {self.phi}, {self.kphi}, {self.mult}"
+
+
+class PairParemeter():
+    def __init__(self, 
+            u: str, 
+            v: str, 
+            func: int, 
+            vii: float, 
+            wii: float):
+        self.u = u
+        self.v = v
+        self.func = func
+        self.vii = vii
+        self.wii = wii
+
+    def __str__(self) -> str:
+        return f"{self.u}, {self.v}, {self.func}, {self.vii}, {self.wii}"
+
 
 def _sort_tuple(*args) -> Tuple[Any, Any]:
     num_check, str_check = False, False
