@@ -1,6 +1,8 @@
 from __future__ import annotations
-from .ff import ForceField, _sort_tuple
+from .constants import pi, vacuum_dielectric_constant
+from .ff import DihedralParemeter, ForceField, _sort_tuple
 from copy import deepcopy
+from numpy.typing import NDArray
 from scipy.spatial.transform import Rotation
 from sys import maxsize
 from typing import Iterable, Iterator, List, Tuple
@@ -22,8 +24,10 @@ class Molecule():
         self.resids = []
         self.resid_atoms = {}
         self.resnames = []
+        self.pairs = []
         self.graph = nx.Graph()
         self.ff = ForceField()
+        self.vdw = None
 
     @staticmethod
     def load_gro(gro: str, top: str, ff: str=None) -> Molecule:
@@ -36,9 +40,10 @@ class Molecule():
         mol.find_dihedrals()
         if ff:
             mol.ff = ForceField.from_itp(ff)
+            # mol.vdw = mol.vdw_1 of mol.ff.comb_rule == 1 else mol.vdw_2
+            mol.vdw = mol.vdw_1
         else:
             mol.ff = ForceField()
-        print(f"{mol.atoms=}")
         return mol
 
     @staticmethod
@@ -167,7 +172,7 @@ class Molecule():
     def load_itp(self, filepath: str):
         self.ff = ForceField.from_itp(filepath)
     
-    def transform(self, r: np.ndarray=None, theta: float=None, axis: int | str=None) -> Molecule:
+    def transform(self, r: NDArray=None, theta: float=None, axis: int | str=None) -> Molecule:
         if (axis is None) != (theta is None):
             raise ValueError("Both axis and theta parameters are necessary to assign rotation") 
         r = np.zeros(3) if r is None else r
@@ -181,6 +186,9 @@ class Molecule():
         new_mol.curr_coords = rot_mat.apply(new_mol.curr_coords)
         new_mol.curr_coords += r
         return new_mol
+
+    def translate(self, vec: NDArray):
+        self.curr_coords += vec
     
     def backbone(self) -> nx.Graph:
         bb = deepcopy(self.graph)
@@ -241,6 +249,17 @@ class Molecule():
             e += ub * (theta - theta0)**2
         return e
 
+    def insert_wildcard(self, types: Iterable[str], pos: int) -> DihedralParemeter:
+        for i in range(pos, 4):
+            types[i] = "X"
+            try:
+                par = self.ff.dihedrals[_sort_tuple(types)]
+                return par
+            except KeyError:
+                if pos < 4:
+                    par = self.insert_wildcard(types, pos+1)
+                    return par
+
     def dihedrals_energy(self):
         e = 0
         for d in self.dihedrals:
@@ -249,29 +268,83 @@ class Molecule():
             type_v = self.atom_types[v]
             type_w = self.atom_types[w]
             type_x = self.atom_types[x]
-            par = self.ff.dihedrals[_sort_tuple(type_u, type_v, type_w, type_x)]
-            phi0 = par.phi
-            kphi = par.kphi
-            n = par.mult
-            p0 = self.coords[u]
-            p1 = self.coords[v]
-            p2 = self.coords[w]
-            p3 = self.coords[x]
-            phi = dihedral(p0, p1, p2, p3)
-            e += kphi * (1 + np.cos(n * phi - phi0))
+            types = [type_u, type_v, type_w, type_x]
+            try:
+                par = self.ff.dihedrals[_sort_tuple(types)]
+            except KeyError:
+                par = self.insert_wildcard(types, 0)
+            else:
+                phi0 = par.phi
+                kphi = par.kphi
+                n = par.mult
+                p0 = self.curr_coords[u]
+                p1 = self.curr_coords[v]
+                p2 = self.curr_coords[w]
+                p3 = self.curr_coords[x]
+                phi = dihedral(p0, p1, p2, p3)
+                e += kphi * (1 + np.cos(n * phi - phi0))
         return e
 
     def impropers_energy(self):
         e = 0
         return e
 
-    def vdw(self):
+    def vdw_1(self):
         e = 0
-        return 0
+        for p in self.pairs:
+            try:
+                u, v = p
+                type_u = self.atom_types[u]
+                type_v = self.atom_types[v]
+                par = self.ff.pairs[_sort_tuple(type_u, type_v)]
+                p0 = self.curr_coords[u]
+                p1 = self.curr_coords[v]
+                dist = distance(p0, p1) 
+                e += par.wii / (4 * dist) - par.vii / (2 * dist)
+            except:
+                pass
+        return e
+
+    def vdw_2(self):
+            print(self.atom_types)
+            e = 0
+            for p in self.pairs:
+                try:
+                    u, v = p
+                    type_u = self.atom_types[u]
+                    type_v = self.atom_types[v]
+                    par = self.ff.pairs[_sort_tuple(type_u, type_v)]
+                    p0 = self.curr_coords[u]
+                    p1 = self.curr_coords[v]
+                    dist = distance(p0, p1) 
+                    e += par.wii / (4 * dist) - par.vii / (2 * dist)
+                except:
+                    pass
+            return e
 
     def elec(self):
         e = 0
-        return 0
+        for p in self.pairs:
+            u, v = p
+            type_u = self.atom_types[u]
+            type_v = self.atom_types[v]
+            par_u = self.ff.atom_types[type_u]
+            par_v = self.ff.atom_types[type_v]
+            p0 = self.curr_coords[u]
+            p1 = self.curr_coords[v]
+            dist = distance(p0, p1)
+            e += par_u.c * par_v.c / (4 * pi * vacuum_dielectric_constant * dist)
+        return e
+
+    def get_pairs(self, threshold: Number):
+        pairs = []
+        for i in self.atoms:
+            pi = self.curr_coords[i]
+            for j in self.atoms[i+1:]:
+                pj = self.curr_coords[j]
+                if distance(pi, pj) <= threshold:
+                    pairs.append((i, j))
+        self.pairs = pairs
 
     def __str__(self) -> str:
         return NotImplemented
@@ -353,16 +426,16 @@ class Molecule():
         return NotImplemented
 
 
-def distance(p0: np.ndarray, p1: np.ndarray) -> float:
+def distance(p0: NDArray, p1: NDArray) -> float:
     return np.linalg.norm(p1 - p0)
 
 def urey_bradley_distance():
     pass
 
-def angle(p0: np.ndarray, p1: np.ndarray, p2: np.ndarray) -> float:
+def angle(p0: NDArray, p1: NDArray, p2: NDArray) -> float:
     return np.dot(p1 - p0, p2 - p0)
 
-def dihedral(p0: np.ndarray, p1: np.ndarray, p2: np.ndarray, p3: np.ndarray) -> float:
+def dihedral(p0: NDArray, p1: NDArray, p2: NDArray, p3: NDArray) -> float:
     b0 = p1 - p0
     b1 = p2 - p1
     b2 = p3 - p2
@@ -375,3 +448,9 @@ def dihedral(p0: np.ndarray, p1: np.ndarray, p2: np.ndarray, p3: np.ndarray) -> 
     if sig:
         rad = rad * sig
     return rad
+
+def get_coord(mol: Molecule) -> NDArray:
+    return mol.coords
+
+def get_curr_coord(mol: Molecule) -> NDArray:
+    return mol.curr_coords
