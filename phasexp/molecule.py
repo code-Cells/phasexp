@@ -280,10 +280,40 @@ class Molecule():
         return len(self.atoms)
 
     def __getitem__(self, key: int) -> int:
-        if isinstance(key, slice):
-            return self.atoms[key]
-        atom = self.atoms[key]
-        return atom
+        if not isinstance(key, tuple):
+            key = (key,)
+        result = []
+        l = len(key)
+        if l == 1:
+            iterable = self.atoms
+        elif l == 2:
+            iterable = self.bonds
+        elif l == 3:
+            iterable = self.angles
+        elif l == 4:
+            iterable = self.dihedrals
+        else:
+            raise IndexError(f"Slice index should have 1 to 4 terms")
+        for i, pair in enumerate(iterable):
+            if self._matches(pair, key):
+                result.append(i)
+        return result
+        # if isinstance(key, slice):
+        #     return self.atoms[key]
+        # atom = self.atoms[key]
+        # return atom
+
+    @staticmethod
+    def _matches(k, key):
+        return all(
+            Molecule._matches_one(i, sel)
+            for i, sel in zip(k, key))
+
+    @staticmethod
+    def _matches_one(i, sel):
+        if isinstance(sel, slice):
+            return i in range(*sel.indices(i+1))
+        return i == sel
 
     def __iter__(self) -> Iterable[List[int]]:
         return iter(self.atoms)
