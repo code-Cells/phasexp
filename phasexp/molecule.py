@@ -3,7 +3,7 @@ from .ff import ForceField, _sort_tuple
 from copy import deepcopy
 from scipy.spatial.transform import Rotation
 from sys import maxsize
-from typing import Iterable, List, Tuple
+from typing import Iterable, Iterator, List, Tuple
 from itertools import combinations
 import networkx as nx
 import numpy as np
@@ -124,24 +124,23 @@ class Molecule():
                     if u != v:
                         mol.residues.add_edge(u, v)
 
-    def find_angles(self):
-        seqs = []
+    def iter_angles(self):
         blacklist = set()
         for a1 in self.graph.nodes:
             for a2 in self.graph.neighbors(a1):
                 for a3 in self.graph.neighbors(a2):
                     if a1 == a3:
                         continue
-                    seq = sorted([a1, a3])
-                    seq.insert(1, a2)
-                    seq = tuple(seq)
-                    if a1 != a3 and seq not in blacklist:
-                        seqs.append(seq)
+                    seq = (min(a1, a3), a2, max(a1, a3))
+                    if seq not in blacklist:
                         blacklist.add(seq)
-        seqs.sort()
-        self.angles = seqs
+                        yield seq  
 
-    def find_dihedrals(self):
+    def find_angles(self):
+        seqs = self.iter_angles() 
+        self.angles = sorted(list(seqs))
+
+    def iter_dihedrals(self):
         seqs = []
         blacklist = set()
         for a1 in self.graph.nodes:
@@ -152,14 +151,18 @@ class Molecule():
                     for a4 in self.graph.neighbors(a3):
                         if a2 == a4:
                             continue
-                        type_a1 = self.atom_types[a1]
-                        type_a4 = self.atom_types[a4]
-                        seq = (a1, a2, a3, a4) if type_a1 <= type_a4 else (a4, a3, a2, a1)
+                        types = self.atom_types[a1], self.atom_types[a4]
+                        if types[0] <= types[1]:
+                            seq = (a1, a2, a3, a4)
+                        else:
+                            seq = (a4, a3, a2, a1)
                         if a1 != a4 and seq not in blacklist:
-                            seqs.append(seq)
                             blacklist.add(seq)
-        seqs.sort()
-        self.dihedrals = seqs
+                            yield seq
+
+    def find_dihedrals(self):
+        seqs = self.iter_dihedrals()
+        self.dihedrals = sorted(list(seqs))
 
     def load_itp(self, filepath: str):
         self.ff = ForceField.from_itp(filepath)
@@ -279,10 +282,12 @@ class Molecule():
     def __len__(self) -> int:
         return len(self.atoms)
 
-    def __getitem__(self, key: int) -> int:
+    def __getitem__(self, key: Tuple[slice]) -> int:
+        return list(self.iterate(key))
+
+    def iterate(self, key: Tuple[slice]) -> Iterator[int]:
         if not isinstance(key, tuple):
             key = (key,)
-        result = []
         l = len(key)
         if l == 1:
             iterable = self.atoms
@@ -296,8 +301,7 @@ class Molecule():
             raise IndexError(f"Slice index should have 1 to 4 terms")
         for i, pair in enumerate(iterable):
             if self._matches(pair, key):
-                result.append(i)
-        return result
+                yield i
         # if isinstance(key, slice):
         #     return self.atoms[key]
         # atom = self.atoms[key]
