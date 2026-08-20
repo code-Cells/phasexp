@@ -1,3 +1,5 @@
+from .testtools import clock
+from pathlib import Path
 from phasexp.molecule import Molecule
 from phasexp.problem import run
 
@@ -13,8 +15,9 @@ from phasexp.problem import run
 #          |                        |
 #          H9                       HA3
 
+@clock
 def test_load_gro():
-    path = "../aa/"
+    path = str(Path(__file__).parent/"aa/") + '/'
     mol = Molecule.load_gro(
         path + "alanine.gro",
         path + "alanine.top",
@@ -42,9 +45,10 @@ def test_load_gro():
         [6, 4, 10, 12], [7, 6, 4, 10], [8, 6, 4, 10], [9, 6, 4, 10] 
     ]
     assert 10 == mol.energy()
-    
+
+@clock
 def test_run():
-    path = "/home/go/Downloads/2d_res_vis/aa/"
+    path = str(Path(__file__).parent/"aa/") + '/'
     mol = Molecule.load_gro(
         path + "alanine.gro",
         path + "alanine.top"
